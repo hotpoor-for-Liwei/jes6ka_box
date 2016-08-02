@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>{{ handler.title }}</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			html{
+				width: 100%;
+				height: 100%;
+			}
+			body {
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+				width: 100%;
+				height: 100%;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				color: #ffffff;
+				padding: 5px;
+				font-family:Monospace;
+				font-size:13px;
+				font-weight: bold;
+				text-align:center;
+			}
+
+			a {
+				color: #ffffff;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+
+		<script src="/static/js/tools/three.js"></script>
+
+		<script>
+			// var SCREEN_WIDTH = document.body.offsetWidth;
+			// var SCREEN_HEIGHT = document.body.offsetHeight;
+			// document.body.style.width = SCREEN_WIDTH+"px";
+			// document.body.style.height = SCREEN_HEIGHT+"px";
+			var URL = "{{ handler.url }}";
+			var camera, scene, renderer;
+			var MOVE = {{ handler.move }};
+			var TARGET_X = parseFloat("{{ handler.target_x }}") || 0;
+			var TARGET_Y = parseFloat("{{ handler.target_y }}") || 0;
+			var TARGET_Z = parseFloat("{{ handler.target_z }}") || 500;
+
+			var texture_placeholder,
+			isUserInteracting = false,
+			onMouseDownMouseX = 0, onMouseDownMouseY = 0,
+			onTouchStartTouchX = 0, onTouchStartTouchY = 0,
+			lon = 0, onMouseDownLon = 0, onTouchStartLon = 0,
+			lat = 0, onMouseDownLat = 0, onTouchStartLat = 0,
+			phi = 0, theta = 0,
+			distance = 500;
+
+			if (TARGET_Z<=1000 && TARGET_Z >=1){
+				distance = TARGET_Z;
+			}
+			lon = TARGET_Y;
+			lat = TARGET_X;
+
+			init();
+			animate();
+
+			function init() {
+
+				var container, mesh;
+
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.target = new THREE.Vector3(0, 0, 0);
+
+				scene = new THREE.Scene();
+
+				var geometry = new THREE.SphereBufferGeometry( 500, 60, 40 );
+				geometry.scale( - 1, 1, 1 );
+
+				var texture = THREE.ImageUtils.loadTexture(URL)
+
+				var material   = new THREE.MeshBasicMaterial( { map : texture } );
+
+				mesh = new THREE.Mesh( geometry, material );
+
+				scene.add( mesh );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+				document.addEventListener( 'touchend', onDocumentTouchEnd, false );
+				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+				document.addEventListener( 'MozMousePixelScroll', onDocumentMouseWheel, false);
+				document.addEventListener( 'keydown', onDocumentKeyDown, false);
+				document.addEventListener( 'keyup', onDocumentKeyUp, false);
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+			function onDocumentTouchEnd(event) {
+				isUserInteracting = false;
+			}
+			function onDocumentTouchStart(event) {
+				event.preventDefault();
+
+				isUserInteracting = true;
+				console.log(event);
+				onPointerDownPointerX = event.touches[0].clientX;
+				onPointerDownPointerY = event.touches[0].clientY;
+
+				onPointerDownLon = lon;
+				onPointerDownLat = lat;
+			}
+			function onDocumentTouchMove( event ) {
+
+				if ( isUserInteracting === true ) {
+
+					lon = ( onPointerDownPointerX - event.touches[0].clientX ) * 0.2 + onPointerDownLon;
+					lat = ( onPointerDownPointerY - event.touches[0].clientY ) * 0.2 + onPointerDownLat;
+
+				}
+
+			}
+			function onDocumentKeyUp(event) {
+				isUserInteracting = false;
+			}
+			function onDocumentKeyDown(event) {
+				if (isUserInteracting === false){
+					x = 0;
+					y = 0;
+				}
+				if (event.key == "ArrowRight") {
+					isUserInteracting = true;
+					y += 1.1*1;
+					if (y > 50){
+						y = 50;
+					}
+				}
+				else if (event.key == "ArrowLeft") {
+					isUserInteracting = true;
+					y += - 1.1*1;
+					if (y < - 50){
+						y = - 50;
+					}
+				}
+				else if (event.key == "ArrowUp") {
+					isUserInteracting = true;
+					x += - 1.1*1;
+					if (x < - 50){
+						x = - 50;
+					}
+				}
+				else if (event.key == "ArrowDown") {
+					isUserInteracting = true;
+					x += 1.1*1;
+					if (x > 50){
+						x = 50;
+					}
+				}
+				lat = lat + x;
+				lon = lon + y;
+			}
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+				isUserInteracting = true;
+
+				onPointerDownPointerX = event.clientX;
+				onPointerDownPointerY = event.clientY;
+
+				onPointerDownLon = lon;
+				onPointerDownLat = lat;
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				if ( isUserInteracting === true ) {
+
+					lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
+					lat = ( onPointerDownPointerY - event.clientY ) * 0.1 + onPointerDownLat;
+
+				}
+
+			}
+
+			function onDocumentMouseUp( event ) {
+
+				isUserInteracting = false;
+
+			}
+
+			function onDocumentMouseWheel( event ) {
+
+				// WebKit
+
+				if ( event.wheelDeltaY ) {
+
+					distance -= event.wheelDeltaY * 0.05;
+
+				// Opera / Explorer 9
+
+				} else if ( event.wheelDelta ) {
+
+					distance -= event.wheelDelta * 0.05;
+
+				// Firefox
+
+				} else if ( event.detail ) {
+
+					distance += event.detail * 1.0;
+
+				}
+				if (distance > 2000 - 500*2){
+					distance = 2000 - 500*2;
+				}else if (distance < 0 ){
+					distance = 1;
+				}
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				update();
+
+			}
+
+			function update() {
+				if ( isUserInteracting === false ) {
+					if (MOVE === true){
+						lon += 0.1;						
+					}
+				}
+				lat = Math.max( - 85, Math.min( 85, lat ) );
+				phi = THREE.Math.degToRad( 90 - lat );
+				theta = THREE.Math.degToRad( lon );
+				camera.position.x = distance * Math.sin( phi ) * Math.cos( theta );
+				camera.position.y = distance * Math.cos( phi );
+				camera.position.z = distance * Math.sin( phi ) * Math.sin( theta );
+				camera.lookAt( camera.target );
+				renderer.render( scene, camera );
+			}
+
+		</script>
+	</body>
+</html>
